@@ -3,9 +3,9 @@
 
 [Demo](https://madblade.github.io/waves-gerstner/)
 
-![](https://raw.githubusercontent.com/madblade/waves-gerstner/img/capture2.jpg)
+![](https://raw.githubusercontent.com/madblade/waves-gerstner/master/img/capture2.jpg)
 
-![](https://raw.githubusercontent.com/madblade/waves-gerstner/img/capture.jpg)
+![](https://raw.githubusercontent.com/madblade/waves-gerstner/master/img/capture.jpg)
 
 ## About
 
