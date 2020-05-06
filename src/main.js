@@ -13,7 +13,7 @@ import {
 } from 'three';
 import { TextureLoader } from 'three/src/loaders/TextureLoader';
 
-import waterNormals from './textures/waternormals.jpg';
+import waterNormals from './textures/waternormals2.jpg';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
 import Stats from 'three/examples/jsm/libs/stats.module';
 import { GUI } from 'three/examples/jsm/libs/dat.gui.module';
@@ -34,7 +34,7 @@ function init()
 {
     //
     container = document.getElementById('container');
-    renderer = new WebGLRenderer();
+    renderer = new WebGLRenderer({ antialias: true });
     renderer.setPixelRatio(window.devicePixelRatio);
     renderer.setSize(window.innerWidth, window.innerHeight);
     container.appendChild(renderer.domElement);
@@ -47,7 +47,7 @@ function init()
     scene.add(light);
 
     // Water
-    let waterGeometry = new PlaneBufferGeometry(500, 500, 100, 100);
+    let waterGeometry = new PlaneBufferGeometry(500, 500, 200, 200);
 
     water = new Water(
         waterGeometry,
@@ -68,7 +68,7 @@ function init()
             amplitude: 20.0,
             steepness: 0.7,
             speed: 1.0,
-            manyWaves: false
+            manyWaves: 0
         }
     );
     water.rotation.x = -Math.PI / 2;
@@ -132,11 +132,11 @@ function init()
     // folder.add(waterUniforms.size, 'value', 0.1, 10, 0.1).name('size');
     // folder.add(waterUniforms.alpha, 'value', 0.9, 1, .001).name('alpha');
     folder.add(waterUniforms.direction, 'value', 0, 2 * Math.PI, 0.01).name('wave angle');
-    folder.add(waterUniforms.frequency, 'value', 0.0, .08, 0.001).name('frequency');
+    folder.add(waterUniforms.frequency, 'value', 0.01, .08, 0.001).name('frequency');
     folder.add(waterUniforms.amplitude, 'value', 0.0, 40.0, 0.5).name('amplitude');
     folder.add(waterUniforms.steepness, 'value', 0, 1.0, 0.01).name('steepness');
     folder.add(waterUniforms.speed, 'value',     0.0, 5.0, 0.01).name('speed');
-    folder.add(waterUniforms.manyWaves, 'value').name('many waves');
+    folder.add(waterUniforms.wavesToAdd, 'value', 0, 16, 1).name('add waves');
     folder.open();
 
     //

@@ -1,34 +1,47 @@
 import {
-    DataTexture, RepeatWrapping, RGBFormat
+    DataTexture, NearestFilter, RepeatWrapping, RGBFormat
 } from 'three';
 
-function clampedRand(min, max)
+function getWave(j, jMax)
 {
-    let range = max - min;
-    let r = Math.random();
-    return r * range + min;
+    let amp = 1.5 / Math.pow(j, 2.0);
+    let frq = (0.002 + ((j - 1) / jMax) * 0.18) / 0.06;
+    return {
+        steepness: (j + 2) / (jMax + 2),
+        speed: 2.0 * (j + 1) / jMax,
+        angle: j * Math.PI * 2.0 / jMax,
+        frequency: frq,
+        amplitude: amp
+    };
 }
 
 // 5 coefficients per wave.
 function getCoefficientsTexture()
 {
-    let width = 4; let height = 4;
+    let width = 8; let height = 8;
     let size = width * height;
     let data = new Uint8Array(3 * size);
 
     let i = 0;
+    let j = 0;
     while (i < 3 * size)
     {
-        data[i++] = clampedRand(0, 2 * Math.PI); // angle
-        data[i++] = clampedRand(0, 0.1); // frequency
-        data[i++] = clampedRand(0, 40); // amplitude
-        data[i++] = clampedRand(0, 1.0); // steepness
-        data[i++] = clampedRand(0, 5.0); // speed
-        data[i++] = 0; // free slot
+        j++;
+        let w = getWave(j, size);
+        data[i++] = 255 * w.steepness;
+        data[i++] = 255 * w.speed;
+        data[i++] = 0.0;
+
+        data[i++] = 255.0 * w.angle;
+        data[i++] = 255.0 * w.frequency;
+        data[i++] = 255.0 * w.amplitude;
     }
 
     let tex = new DataTexture(data, width, height, RGBFormat);
-    tex.wrapT = RepeatWrapping;
+    tex.generateMipmaps = false;
+    tex.minFilter = NearestFilter;
+    tex.magFilter = NearestFilter;
+    tex.wrapT = RepeatWrapping; // should not be useful
     tex.wrapS = RepeatWrapping;
     return tex;
 }

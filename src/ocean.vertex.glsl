@@ -1,95 +1,113 @@
+// Approach reference
+// https://developer.nvidia.com/gpugems/gpugems/part-i-natural-effects/chapter-1-effective-water-simulation-physical-models
 
+// Normal textures
 uniform mat4 textureMatrix;
-uniform float time;
 
+// User-specified first wave
 uniform float direction;
 uniform float frequency;
 uniform float amplitude;
 uniform float steepness;
 uniform float speed;
 
-uniform bool manyWaves;
+// Additional coefficients stored in texture
+uniform int wavesToAdd;
+uniform sampler2D coefficientSampler;
+
+// Simulation step
+uniform float time;
 
 varying vec4 mirrorCoord;
 varying vec4 worldPosition;
-
 varying vec3 vvnormal;
 #include <fog_pars_vertex>
 #include <shadowmap_pars_vertex>
 #include <logdepthbuf_pars_vertex>
 
+const int NB_WAVES = 16;
+
 void addWave(
     float x, float y,
-    float frequencyI, float amplitudeI, float steepnessI, vec2 directionI, float phaseI,
-    inout vec3 o
+    float frequencyI, float amplitudeI, float steepnessI, float directionI, float phaseI,
+    inout vec3 o, bool doIt
 )
 {
+    if (!doIt) return;
+    vec2 d = vec2(cos(directionI), sin(directionI));
     float s = steepnessI / (clamp(amplitudeI, 0.01, 1e7) * frequencyI);
     float sa = s * amplitudeI;
-    float fdotpht = frequencyI * dot(directionI, vec2(x, y)) + phaseI * time;
+    float fdotpht = frequencyI * dot(d, vec2(x, y)) + phaseI * time;
     float sacf = sa * cos(fdotpht);
-    o.x += directionI.x * sacf;
-    o.y += directionI.y * sacf;
+    o.x += d.x * sacf;
+    o.y += d.y * sacf;
     o.z += amplitudeI * sin(fdotpht);
 }
 
 void addWaveNormal(
     float x, float y,
-    float frequencyI, float amplitudeI, float steepnessI, vec2 directionI, float phaseI,
-    vec3 p, inout vec3 n
+    float frequencyI, float amplitudeI, float steepnessI, float directionI, float phaseI,
+    vec3 p, inout vec3 n, bool doIt
 )
 {
+    if (!doIt) return;
+    vec2 d = vec2(cos(directionI), sin(directionI));
     float s = steepnessI / (clamp(amplitudeI, 0.01, 1e7) * frequencyI);
     float fa = frequencyI * amplitudeI;
-    float fdpt = frequencyI * dot(vec3(directionI, 0.0), p) + phaseI * time;
+    float fdpt = frequencyI * dot(vec3(d, 0.0), p) + phaseI * time;
     float facf = fa * cos(fdpt);
-    n.x -= (directionI.x * facf );
-    n.y -= (directionI.y * facf );
+    n.x -= (d.x * facf );
+    n.y -= (d.y * facf );
     n.z -= (s * fa * sin(fdpt) );
 }
 
-// Ref. in GPU Gems 1
-// https://developer.nvidia.com/gpugems/gpugems/part-i-natural-effects/chapter-1-effective-water-simulation-physical-models
 vec3 gerstnerPositions(float x, float y)
 {
-    vec3 o;
-    o.x = x;
-    o.y = y;
-    o.z = 0.0;
+    vec3 o = vec3(x, y, 0.0);
 
-    addWave(x, y, frequency, amplitude, steepness, vec2(cos(direction), sin(direction)), speed, o);
+    addWave(x, y, frequency, amplitude, steepness, direction, speed, o, wavesToAdd < 1);
 
-    const int nbWaves = 1;
-    for (int i = 0; i < nbWaves; i++)
+    float tx = 0.0; float ty = 0.0;
+    for (int i = 0; i < NB_WAVES; i++)
     {
-        float frequencyI = 0.05; // wi
-        float amplitudeI = 20.0; // Ai
-//        float steepnessI = 1.0 / (frequencyI * amplitudeI); // Qi from 0 to 1/wiAi
-        vec2 directionI = normalize(vec2(1.0, 0.0));
-        float phaseI = 1.0; // phiI
-//        addWave(x, y, frequencyI, amplitudeI, steepnessI, directionI, phaseI, o);
+        if (i >= wavesToAdd) break;
+        tx++; if (tx > 7.0) { tx = 0.0; ty++; }
+        vec4 rgb1 = texture2D(coefficientSampler, vec2(tx + 0.01, ty + 0.01) / 8.0);
+        tx++; if (tx > 7.0) { tx = 0.0; ty++; }
+        vec4 rgb2 = texture2D(coefficientSampler, vec2(tx + 0.01, ty + 0.01) / 8.0);
+        float directionI = float(rgb1.r) * 2.0 * 3.1415;
+        float frequencyI = float(rgb1.g) * 0.4;
+        float amplitudeI = float(rgb1.b) * 40.0;
+        float steepnessI = float(rgb2.r) * 1.0;
+        float phaseI     = float(rgb2.g) * 5.0;
+        addWave(x, y, frequencyI, amplitudeI, steepnessI, directionI, phaseI, o, true); // i == wavesToAdd - 1);
     }
+
     return o;
 }
 
 vec3 gerstnerNormals(float x, float y, vec3 p)
 {
-    vec3 n;
-    n.x = 0.0;
-    n.y = 0.0;
-    n.z = 1.0;
+    vec3 n = vec3(0.0, 0.0, 1.0);
 
-    addWaveNormal(x, y, frequency, amplitude, steepness, vec2(cos(direction), sin(direction)), speed, p, n);
-    const int nbWaves = 1;
-    for (int i = 0; i < nbWaves; i++) {
-        float frequencyI = 0.05; // wi
-        float amplitudeI = 20.0; // Ai
-//        float steepnessI = 1.0 / (frequencyI * amplitudeI); // Qi from 0 to 1/wiAi
-        vec2 directionI = normalize(vec2(1.0, 0.0));
-        float phaseI = 1.0; // phiI
+    addWaveNormal(x, y, frequency, amplitude, steepness, direction, speed, p, n, wavesToAdd < 1);
 
-//        addWaveNormal(x, y, frequencyI, amplitudeI, steepnessI, directionI, phaseI, p, n);
+    float tx = 0.0; float ty = 0.0;
+    for (int i = 0; i < NB_WAVES; i++)
+    {
+        if (i >= wavesToAdd) break;
+        tx++; if (tx > 7.0) { tx = 0.0; ty++; }
+        vec4 rgb1 = texture2D(coefficientSampler, vec2(tx + 0.01, ty + 0.01) / 8.0);
+        tx++; if (tx > 7.0) { tx = 0.0; ty++; }
+        vec4 rgb2 = texture2D(coefficientSampler, vec2(tx + 0.01, ty + 0.01) / 8.0);
+        float directionI = float(rgb1.r) * 2.0 * 3.1415;
+        float frequencyI = float(rgb1.g) * 0.1;
+        float amplitudeI = float(rgb1.b) * 40.0;
+        float steepnessI = float(rgb2.r) * 1.0;
+        float phaseI     = float(rgb2.g) * 5.0;
+        addWaveNormal(x, y, frequencyI, amplitudeI, steepnessI, directionI, phaseI, p, n, true); // i == wavesToAdd - 1);
     }
+
     return n;
 }
 

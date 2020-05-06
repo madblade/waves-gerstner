@@ -107,7 +107,7 @@ let Waves = function(geometry, options)
                 steepness: { value: steepness },
                 speed: { value: speed },
 
-                manyWaves: { value: manyWaves },
+                wavesToAdd: { value: manyWaves },
                 coefficientSampler: { value: coefficientTexture },
             }
         ]),
