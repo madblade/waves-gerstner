@@ -8,6 +8,8 @@ uniform float amplitude;
 uniform float steepness;
 uniform float speed;
 
+uniform bool manyWaves;
+
 varying vec4 mirrorCoord;
 varying vec4 worldPosition;
 
@@ -22,7 +24,8 @@ void addWave(
     inout vec3 o
 )
 {
-    float sa = steepnessI * amplitudeI;
+    float s = steepnessI / (clamp(amplitudeI, 0.01, 1e7) * frequencyI);
+    float sa = s * amplitudeI;
     float fdotpht = frequencyI * dot(directionI, vec2(x, y)) + phaseI * time;
     float sacf = sa * cos(fdotpht);
     o.x += directionI.x * sacf;
@@ -36,12 +39,13 @@ void addWaveNormal(
     vec3 p, inout vec3 n
 )
 {
+    float s = steepnessI / (clamp(amplitudeI, 0.01, 1e7) * frequencyI);
     float fa = frequencyI * amplitudeI;
     float fdpt = frequencyI * dot(vec3(directionI, 0.0), p) + phaseI * time;
     float facf = fa * cos(fdpt);
     n.x -= (directionI.x * facf );
     n.y -= (directionI.y * facf );
-    n.z -= (steepnessI * fa * sin(fdpt) );
+    n.z -= (s * fa * sin(fdpt) );
 }
 
 // Ref. in GPU Gems 1
@@ -52,6 +56,7 @@ vec3 gerstnerPositions(float x, float y)
     o.x = x;
     o.y = y;
     o.z = 0.0;
+
     addWave(x, y, frequency, amplitude, steepness, vec2(cos(direction), sin(direction)), speed, o);
 
     const int nbWaves = 1;
@@ -59,7 +64,7 @@ vec3 gerstnerPositions(float x, float y)
     {
         float frequencyI = 0.05; // wi
         float amplitudeI = 20.0; // Ai
-        float steepnessI = 1.0 / (frequencyI * amplitudeI); // Qi from 0 to 1/wiAi
+//        float steepnessI = 1.0 / (frequencyI * amplitudeI); // Qi from 0 to 1/wiAi
         vec2 directionI = normalize(vec2(1.0, 0.0));
         float phaseI = 1.0; // phiI
 //        addWave(x, y, frequencyI, amplitudeI, steepnessI, directionI, phaseI, o);
@@ -79,7 +84,7 @@ vec3 gerstnerNormals(float x, float y, vec3 p)
     for (int i = 0; i < nbWaves; i++) {
         float frequencyI = 0.05; // wi
         float amplitudeI = 20.0; // Ai
-        float steepnessI = 1.0 / (frequencyI * amplitudeI); // Qi from 0 to 1/wiAi
+//        float steepnessI = 1.0 / (frequencyI * amplitudeI); // Qi from 0 to 1/wiAi
         vec2 directionI = normalize(vec2(1.0, 0.0));
         float phaseI = 1.0; // phiI
 

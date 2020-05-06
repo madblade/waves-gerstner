@@ -20,7 +20,7 @@ import {
     RGBFormat,
     ShaderMaterial,
     UniformsLib,
-    UniformsUtils, Vector2,
+    UniformsUtils,
     Vector3,
     Vector4,
     WebGLRenderTarget
@@ -28,6 +28,7 @@ import {
 
 import WavesFragment from './ocean.fragment.glsl';
 import WavesVertex from './ocean.vertex.glsl';
+import { getCoefficientsTexture } from './coefficients';
 
 let Waves = function(geometry, options)
 {
@@ -51,15 +52,14 @@ let Waves = function(geometry, options)
     let side = options.side !== undefined ? options.side : FrontSide;
     let fog = options.fog !== undefined ? options.fog : false;
 
-
     let direction = options.direction !== undefined ? options.direction : 0.0;
     let frequency = options.frequency !== undefined ? options.frequency : 0.05;
     let amplitude = options.amplitude !== undefined ? options.amplitude : 20.0;
     let steepness = options.steepness !== undefined ? options.steepness : 1.0;
     let speed = options.speed !== undefined ? options.speed : 1.0;
+    let manyWaves = options.manyWaves !== undefined ? options.manyWaves : false;
 
     //
-
     let mirrorPlane = new Plane();
     let normal = new Vector3();
     let mirrorWorldPosition = new Vector3();
@@ -67,50 +67,48 @@ let Waves = function(geometry, options)
     let rotationMatrix = new Matrix4();
     let lookAtPosition = new Vector3(0, 0, -1);
     let clipPlane = new Vector4();
-
     let view = new Vector3();
     let target = new Vector3();
     let q = new Vector4();
-
     let textureMatrix = new Matrix4();
-
     let mirrorCamera = new PerspectiveCamera();
-
     let parameters = {
         minFilter: LinearFilter,
         magFilter: LinearFilter,
         format: RGBFormat,
         stencilBuffer: false
     };
-
     let renderTarget = new WebGLRenderTarget(textureWidth, textureHeight, parameters);
-
-    if (!MathUtils.isPowerOfTwo(textureWidth) || !MathUtils.isPowerOfTwo(textureHeight)) {
+    if (!MathUtils.isPowerOfTwo(textureWidth) || !MathUtils.isPowerOfTwo(textureHeight))
         renderTarget.texture.generateMipmaps = false;
-    }
 
-    let mirrorShader = {
+    let coefficientTexture = getCoefficientsTexture();
 
+    let mirrorShader =
+    {
         uniforms: UniformsUtils.merge([
             UniformsLib.fog,
             UniformsLib.lights,
             {
-                normalSampler: {value: null},
-                mirrorSampler: {value: null},
-                alpha: {value: 1.0},
-                time: {value: 0.0},
-                size: {value: 2.7},
-                textureMatrix: {value: new Matrix4()},
-                sunColor: {value: new Color(0x7F7F7F)},
-                sunDirection: {value: new Vector3(0.70707, 0.70707, 0)},
-                eye: {value: new Vector3()},
-                waterColor: {value: new Color(0x555555)},
+                normalSampler: { value: null },
+                mirrorSampler: { value: null },
+                alpha: { value: 1.0 },
+                time: { value: 0.0 },
+                size: { value: 2.7 },
+                textureMatrix: { value: new Matrix4() },
+                sunColor: { value: new Color(0x7F7F7F) },
+                sunDirection: { value: new Vector3(0.70707, 0.70707, 0) },
+                eye: { value: new Vector3() },
+                waterColor: { value: new Color(0x555555) },
 
                 direction: { value: direction },
                 frequency: { value: frequency },
                 amplitude: { value: amplitude },
                 steepness: { value: steepness },
                 speed: { value: speed },
+
+                manyWaves: { value: manyWaves },
+                coefficientSampler: { value: coefficientTexture },
             }
         ]),
 
@@ -143,7 +141,6 @@ let Waves = function(geometry, options)
     material.uniforms.sunColor.value = sunColor;
     material.uniforms.waterColor.value = waterColor;
     material.uniforms.sunDirection.value = sunDirection;
-
     material.uniforms.eye.value = eye;
 
     scope.material = material;
@@ -205,8 +202,8 @@ let Waves = function(geometry, options)
         projectionMatrix.elements[14] = clipPlane.w;
         eye.setFromMatrixPosition(camera.matrixWorld);
 
-        //
         let currentRenderTarget = renderer.getRenderTarget();
+        // Save
         let currentXrEnabled = renderer.xr.enabled;
         let currentShadowAutoUpdate = renderer.shadowMap.autoUpdate;
         scope.visible = false;
@@ -217,6 +214,7 @@ let Waves = function(geometry, options)
         if (renderer.autoClear === false) renderer.clear();
         renderer.render(scene, mirrorCamera);
 
+        // Restore
         scope.visible = true;
         renderer.xr.enabled = currentXrEnabled;
         renderer.shadowMap.autoUpdate = currentShadowAutoUpdate;

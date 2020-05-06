@@ -2,12 +2,9 @@
 import { Waves as Water } from './Waves.js';
 import { Sky } from './Sky.js';
 import {
-    Color,
     CubeCamera,
-    DirectionalLight, DoubleSide,
-    Float32BufferAttribute,
-    IcosahedronBufferGeometry,
-    LinearMipmapLinearFilter, Mesh, MeshStandardMaterial,
+    DirectionalLight,
+    LinearMipmapLinearFilter,
     PerspectiveCamera,
     PlaneBufferGeometry,
     RepeatWrapping,
@@ -29,7 +26,6 @@ let renderer;
 let light;
 let controls;
 let water;
-let sphere;
 
 init();
 animate();
@@ -71,7 +67,8 @@ function init()
             frequency: 0.05,
             amplitude: 20.0,
             steepness: 0.7,
-            speed: 1.0
+            speed: 1.0,
+            manyWaves: false
         }
     );
     water.rotation.x = -Math.PI / 2;
@@ -134,11 +131,12 @@ function init()
     folder = gui.addFolder('Water');
     // folder.add(waterUniforms.size, 'value', 0.1, 10, 0.1).name('size');
     // folder.add(waterUniforms.alpha, 'value', 0.9, 1, .001).name('alpha');
-    folder.add(waterUniforms.direction, 'value', 0, 2 * Math.PI, 0.01).name('wave anlge');
-    folder.add(waterUniforms.frequency, 'value', 0.0, .5, 0.001).name('frequency');
+    folder.add(waterUniforms.direction, 'value', 0, 2 * Math.PI, 0.01).name('wave angle');
+    folder.add(waterUniforms.frequency, 'value', 0.0, .08, 0.001).name('frequency');
     folder.add(waterUniforms.amplitude, 'value', 0.0, 40.0, 0.5).name('amplitude');
     folder.add(waterUniforms.steepness, 'value', 0, 1.0, 0.01).name('steepness');
-    folder.add(waterUniforms.speed, 'value', 0.0, 5.0, 0.01).name('speed');
+    folder.add(waterUniforms.speed, 'value',     0.0, 5.0, 0.01).name('speed');
+    folder.add(waterUniforms.manyWaves, 'value').name('many waves');
     folder.open();
 
     //
