@@ -5,7 +5,7 @@
   "scripts": {
     "dev": "webpack --env development --mode development",
     "build": "webpack --env production --mode production --progress",
-    "watch": "webpack serve --env development --output-public-path=/dist/ --open chrome --hot --watch"
+    "watch": "webpack serve --mode development --env development --output-public-path=/dist/ --open chrome --hot --watch"
   },
   "keywords": [
     "gerstner waves threejs"
