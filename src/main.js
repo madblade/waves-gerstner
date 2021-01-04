@@ -7,14 +7,14 @@ import {
     LinearMipmapLinearFilter,
     PerspectiveCamera,
     PlaneBufferGeometry,
-    RepeatWrapping,
-    Scene,
+    RepeatWrapping, RGBFormat,
+    Scene, WebGLCubeRenderTarget,
     WebGLRenderer
 } from 'three';
 import { TextureLoader } from 'three/src/loaders/TextureLoader';
 
 import waterNormals from './textures/waternormals2.jpg';
-import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
+import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import Stats from 'three/examples/jsm/libs/stats.module';
 import { GUI } from 'three/examples/jsm/libs/dat.gui.module';
 
@@ -88,9 +88,18 @@ function init()
         inclination: 0.3,
         azimuth: 0.205
     };
-    let cubeCamera = new CubeCamera(0.1, 1, 512);
-    cubeCamera.renderTarget.texture.generateMipmaps = true;
-    cubeCamera.renderTarget.texture.minFilter = LinearMipmapLinearFilter;
+
+    const cubeRenderTarget = new WebGLCubeRenderTarget(512, {
+        format: RGBFormat,
+        generateMipmaps: true,
+        minFilter: LinearMipmapLinearFilter
+    });
+    let cubeCamera = new CubeCamera(0.1, 1, cubeRenderTarget);
+    // let cubeCamera = new CubeCamera(0.1, 1, 512);
+    // cubeCamera.renderTarget.texture.generateMipmaps = true;
+    // cubeCamera.renderTarget.texture.minFilter = LinearMipmapLinearFilter;
+
+
     scene.background = cubeCamera.renderTarget;
 
     function updateSun()
