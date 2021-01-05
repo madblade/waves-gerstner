@@ -6,6 +6,7 @@ const webpack = require('webpack');
 module.exports = function(env) {
     return {
         entry: './src/main.js',
+        target: 'web',
 
         plugins: [
             new CleanWebpackPlugin(),
